@@ -1,0 +1,17 @@
+{
+  "name": "gitex-africa-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for GITEX Africa 2026 - personalized exhibitor discovery",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "scrape": "node scrape.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "cheerio": "^1.0.0",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}
