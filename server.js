@@ -416,8 +416,15 @@ async function main() {
       next();
     });
 
+    app.get('/favicon.ico', (_req, res) => {
+      res.sendFile(join(__dirname, 'favicon_GAF.png'), { headers: { 'Content-Type': 'image/png' } });
+    });
+
     app.get('/', (_req, res) => {
-      res.send('GITEX Africa 2026 MCP Server is running. POST /mcp to connect.');
+      res.send(`<!DOCTYPE html><html><head>
+        <title>GITEX Africa 2026 MCP</title>
+        <link rel="icon" type="image/png" href="/favicon.ico">
+      </head><body>GITEX Africa 2026 MCP Server is running. POST /mcp to connect.</body></html>`);
     });
 
     // Single endpoint — new server + transport per request (stateless)
