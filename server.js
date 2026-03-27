@@ -257,15 +257,16 @@ function searchSpeakers({ topic }) {
 }
 
 // ---------------------------------------------------------------------------
-// MCP Server setup
+// MCP Server factory — creates a fresh instance per connection
 // ---------------------------------------------------------------------------
 
-const server = new Server(
-  { name: 'GITEX Africa 2026', version: '1.0.0' },
-  { capabilities: { tools: {} } }
-);
+function createMcpServer() {
+  const server = new Server(
+    { name: 'GITEX Africa 2026', version: '1.0.0' },
+    { capabilities: { tools: {} } }
+  );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'search_exhibitors',
@@ -388,42 +389,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+  return server;
+}
+
 // ---------------------------------------------------------------------------
-// Start — stdio locally, HTTP/SSE on Railway (when PORT is set)
+// Start — stdio locally, HTTP (StreamableHTTP) on Railway (when PORT is set)
 // ---------------------------------------------------------------------------
 
 async function main() {
   const PORT = process.env.PORT;
 
   if (PORT) {
-    // HTTP mode for Railway (and any remote hosting)
     const { default: express } = await import('express');
-    const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
+    const { StreamableHTTPServerTransport } = await import('@modelcontextprotocol/sdk/server/streamableHttp.js');
 
     const app = express();
     app.use(express.json());
 
-    const transports = {};
+    // CORS — required for Claude.ai browser client
+    app.use((_req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, mcp-session-id');
+      res.setHeader('Access-Control-Expose-Headers', 'mcp-session-id');
+      if (_req.method === 'OPTIONS') { res.sendStatus(204); return; }
+      next();
+    });
 
     app.get('/', (_req, res) => {
-      res.send('GITEX Africa 2026 MCP Server is running. Connect via /sse');
+      res.send('GITEX Africa 2026 MCP Server is running. POST /mcp to connect.');
     });
 
-    app.get('/sse', async (req, res) => {
-      const transport = new SSEServerTransport('/messages', res);
-      transports[transport.sessionId] = transport;
-      res.on('close', () => delete transports[transport.sessionId]);
-      await server.connect(transport);
-    });
-
-    app.post('/messages', async (req, res) => {
-      const sessionId = req.query.sessionId;
-      const transport = transports[sessionId];
-      if (!transport) {
-        res.status(400).send('Unknown sessionId');
-        return;
+    // Single endpoint — new server + transport per request (stateless)
+    app.post('/mcp', async (req, res) => {
+      try {
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+        const server = createMcpServer();
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+        res.on('finish', () => server.close());
+      } catch (err) {
+        console.error('MCP request error:', err);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
       }
-      await transport.handlePostMessage(req, res);
     });
 
     app.listen(PORT, () => {
@@ -431,6 +439,7 @@ async function main() {
     });
   } else {
     // Stdio mode for local Claude Desktop
+    const server = createMcpServer();
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error(`GITEX Africa 2026 MCP server running (stdio). Loaded ${EXHIBITORS.length} exhibitors.`);
