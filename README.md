@@ -38,3 +38,55 @@ Instead of browsing a static catalog, you can ask:
 
 ## Quick Start
 ```bash
+git clone https://github.com/Zakaria-pro/gitex-africa-2016-mcp-server.git
+cd gitex-africa-2016-mcp-server
+npm install
+node server.js
+```
+
+### Connect to Claude Desktop
+
+Add this to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "gitex-africa": {
+      "command": "node",
+      "args": ["/absolute/path/to/server.js"]
+    }
+  }
+}
+```
+
+## Origin Story
+
+Built as an MVP demo for GITEX Africa 2026 (April 7-9, Marrakech) to showcase
+what an AI-native event intelligence layer looks like in practice. The server
+was demonstrated live to the Country Chief Representative as a proof of concept
+for grounding AI agents in structured real-world event data.
+
+## Use Cases
+
+- **Founders** preparing targeted meeting lists before the event
+- **Investors** screening for sectors and geographies of interest
+- **Ecosystem builders** mapping the landscape across 1,400+ exhibitors
+- **Anyone** who wants signal, not noise, from a large trade show
+
+## Files
+```
+server.js          # MCP server — tool definitions and handlers
+scrape.js          # Scraper used to build the exhibitor dataset
+exhibitors.json    # Structured exhibitor catalog
+favorites.json     # Persisted favorites store
+```
+
+## Event
+
+**GITEX Africa 2026**
+April 7-9, 2026 | Marrakech, Morocco
+[gitexafrica.com](https://gitexafrica.com)
+
+---
+
+Built by [Zakariae](https://github.com/Zakaria-pro) — co-founder of
+[Willowcy](https://willowcy.com) and [Tawjih.ai](https://tawjih.ai)
